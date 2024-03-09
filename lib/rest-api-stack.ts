@@ -247,6 +247,24 @@ export class RestAPIStack extends cdk.Stack {
         const movieReviewByIdAndReviewerEndpoint = reviewsEndpoint.addResource("{reviewerName}");
         movieReviewByIdAndReviewerEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewByReviewerFn, {proxy: true}));
 
+        const updateMovieReviewFn = new lambdanode.NodejsFunction(this, "UpdateMovieReviewFn", {
+            architecture: lambda.Architecture.ARM_64,
+            runtime: lambda.Runtime.NODEJS_14_X,
+            entry: `${__dirname}/../lambdas/reviews/updateMovieReview.ts`,
+            handler: 'handler',
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            environment: {
+                TABLE_NAME: movieReviewsTable.tableName,
+                REGION: 'eu-west-1',
+            },
+        });
+
+        // 授权Lambda函数访问MovieReviews表进行更新操作
+        movieReviewsTable.grantReadWriteData(updateMovieReviewFn);
+
+        // 在API网关中添加路由以支持PUT请求
+        movieReviewByIdAndReviewerEndpoint.addMethod("PUT", new apig.LambdaIntegration(updateMovieReviewFn, {proxy: true}));
 
     }
 }
