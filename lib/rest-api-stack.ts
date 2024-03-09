@@ -29,6 +29,14 @@ export class RestAPIStack extends cdk.Stack {
       tableName: "MovieCast",
     });
 
+    const movieReviewsTable = new dynamodb.Table(this, "MovieReviewsTable", {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: { name: "movieId", type: dynamodb.AttributeType.NUMBER },
+      sortKey: { name: "reviewDate", type: dynamodb.AttributeType.STRING },
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // 注意：实际部署时可能需要更保守的策略
+      tableName: "MovieReviews",
+    });
+
     movieCastsTable.addLocalSecondaryIndex({
       indexName: "roleIx",
       sortKey: { name: "roleName", type: dynamodb.AttributeType.STRING },
@@ -68,8 +76,7 @@ export class RestAPIStack extends cdk.Stack {
             TABLE_NAME: moviesTable.tableName,
             REGION: 'eu-west-1',
           },
-        }
-        );
+        });
         
         new custom.AwsCustomResource(this, "moviesddbInitData", {
           onCreate: {
@@ -182,6 +189,26 @@ export class RestAPIStack extends cdk.Stack {
             new apig.LambdaIntegration(getMovieCastMembersFn, { proxy: true })
         );
         
+
+        const getMovieReviewsFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsFn", {
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_14_X, // 确保与你的环境兼容
+          entry: `${__dirname}/../lambdas/getMovieReviews.ts`, // Lambda函数代码的路径
+          handler: 'handler', // 你的Lambda函数入口文件中的函数名
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            REVIEWS_TABLE_NAME: movieReviewsTable.tableName, // 将表名传递给Lambda函数
+            REGION: 'eu-west-1', // 根据需要调整区域
+          },
+        });
+        
+        // 授权Lambda函数访问MovieReviews表
+        movieReviewsTable.grantReadData(getMovieReviewsFn);
+
+        const reviewsEndpoint = movieEndpoint.addResource("reviews");
+        reviewsEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewsFn, { proxy: true }));
+
       }
     }
     
