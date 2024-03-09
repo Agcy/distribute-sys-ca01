@@ -266,5 +266,26 @@ export class RestAPIStack extends cdk.Stack {
         // 在API网关中添加路由以支持PUT请求
         movieReviewByIdAndReviewerEndpoint.addMethod("PUT", new apig.LambdaIntegration(updateMovieReviewFn, {proxy: true}));
 
+
+        const getMovieReviewsByYearFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsByYearFn", {
+            architecture: lambda.Architecture.ARM_64,
+            runtime: lambda.Runtime.NODEJS_14_X,
+            entry: `${__dirname}/../lambdas/reviews/getMovieReviewsByYear.ts`,
+            handler: 'handler',
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            environment: {
+                REVIEWS_TABLE_NAME: movieReviewsTable.tableName, // 确保使用正确的环境变量
+                REGION: 'eu-west-1',
+            },
+        });
+
+        // 授权Lambda函数访问MovieReviews表
+        movieReviewsTable.grantReadData(getMovieReviewsByYearFn);
+
+        // 在API网关中添加一个新的资源和方法以支持GET请求
+        const reviewsByYearEndpoint = reviewsEndpoint.addResource("{year}");
+        reviewsByYearEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewsByYearFn, { proxy: true }));
+
     }
 }
