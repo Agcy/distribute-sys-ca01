@@ -209,5 +209,23 @@ export class RestAPIStack extends cdk.Stack {
         const reviewsEndpoint = movieEndpoint.addResource("reviews");
         reviewsEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewsFn, { proxy: true }));
 
+
+        // 定义添加电影评论的Lambda函数
+        const addMovieReviewFn = new lambdanode.NodejsFunction(this, "AddMovieReviewFn", {
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_14_X, // 确保与你的环境兼容
+          entry: `${__dirname}/../lambdas/reviews/addMovieReview.ts`, // Lambda函数代码的路径
+          handler: 'handler',
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            REVIEWS_TABLE_NAME: movieReviewsTable.tableName, // 将表名传递给Lambda函数
+            REGION: 'eu-west-1', // 根据需要调整区域
+          },
+        });
+
+        // 授权Lambda函数访问MovieReviews表进行写操作
+        movieReviewsTable.grantReadWriteData(addMovieReviewFn);
+        reviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(addMovieReviewFn, { proxy: true }));
       }
     }
