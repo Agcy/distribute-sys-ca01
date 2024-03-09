@@ -1,2 +1,2 @@
-# Serverless REST web API.
+# Distributed Systems - Assignment 1
 
