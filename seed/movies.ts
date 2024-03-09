@@ -353,47 +353,37 @@ export const movieCasts: MovieCast[] = [
 
 export const movieReviews: MovieReviews[] = [
   {
-    id: 1,
     movieId: 848326, // Rebel Moon - Part One: A Child of Fire
-    reviewName: "Epic Start",
     reviewDate: "2023-12-16",
-    reviewer: "Alex",
+    reviewerName: "Alex",
     content: "A promising start to what could be an epic saga. The visuals are stunning, and the story has depth.",
     rating: 4.5,
   },
   {
-    id: 2,
     movieId: 572802, // Aquaman and the Lost Kingdom
-    reviewName: "Solid Sequel",
     reviewDate: "2023-12-21",
-    reviewer: "Jordan",
+    reviewerName: "Jordan",
     content: "While it doesn't surpass the original, it's a solid sequel with plenty of action and stunning underwater visuals.",
     rating: 4,
   },
   {
-    id: 3,
     movieId: 695721, // The Hunger Games: The Ballad of Songbirds & Snakes
-    reviewName: "Back to Panem",
     reviewDate: "2023-11-17",
-    reviewer: "Casey",
+    reviewerName: "Casey",
     content: "An intriguing look into the early days of Panem. This prequel adds a rich background to the Hunger Games saga.",
     rating: 4.2,
   },
   {
-    id: 4,
     movieId: 1029575, // The Family Plan
-    reviewName: "Unexpectedly Fun",
     reviewDate: "2023-12-14",
-    reviewer: "Drew",
+    reviewerName: "Drew",
     content: "A surprisingly enjoyable action-comedy that brings a fresh take on the genre. Great for a family movie night.",
     rating: 3.8,
   },
   {
-    id: 5,
     movieId: 787699, // Wonka
-    reviewName: "A Sweet Prequel",
     reviewDate: "2023-12-06",
-    reviewer: "Morgan",
+    reviewerName: "Morgan",
     content: "Delves into Wonka's origins with creativity and charm. A delightful watch that leaves you craving more.",
     rating: 4.3,
   },

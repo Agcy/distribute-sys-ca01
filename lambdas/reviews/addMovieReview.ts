@@ -2,7 +2,7 @@ import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import Ajv from "ajv";
-import schema from "../shared/review.schema.json"; // 路径根据你的项目结构调整
+import schema from "../shared/type.schema.json"; // 路径根据你的项目结构调整
 
 const ajv = new Ajv();
 const isValidBodyParams = ajv.compile(schema.definitions["MovieReviews"] || {});
@@ -26,7 +26,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
         await ddbDocClient.send(
             new PutCommand({
-                TableName: process.env.TABLE_NAME,
+                TableName: process.env.REVIEW_TABLE_NAME,
                 Item: body,
             })
         );
