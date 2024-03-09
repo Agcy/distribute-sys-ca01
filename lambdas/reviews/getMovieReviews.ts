@@ -9,6 +9,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     try {
         console.log("Event: ", event);
         const movieId = event.pathParameters?.movieId;
+        const minRating = event.queryStringParameters?.minRating;
+        const maxRating = event.queryStringParameters?.maxRating;
 
         if (!movieId) {
             return {
@@ -20,15 +22,41 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
             };
         }
 
-        const commandOutput = await docClient.send(
-            new QueryCommand({
-                TableName: process.env.TABLE_NAME,
-                KeyConditionExpression: "movieId = :movieId",
-                ExpressionAttributeValues: {
-                    ":movieId": { N: movieId.toString() },
-                },
-            })
-        );
+        let filterExpression = "";
+        let expressionAttributeValues: { [key: string]: { N: string } } = {
+            ":movieId": { N: movieId.toString() },
+        };
+
+        if (minRating) {
+            filterExpression += "rating >= :minRating";
+            expressionAttributeValues[":minRating"] = { N: minRating };
+        }
+
+        if (maxRating) {
+            if (filterExpression.length > 0) {
+                filterExpression += " AND ";
+            }
+            filterExpression += "rating <= :maxRating";
+            expressionAttributeValues[":maxRating"] = { N: maxRating };
+        }
+
+        const queryCommandInput: {
+            TableName: string | undefined;
+            KeyConditionExpression: string;
+            ExpressionAttributeValues: { [key: string]: { N: string } };
+            FilterExpression?: string;
+        } = {
+            TableName: process.env.REVIEWS_TABLE_NAME,
+            KeyConditionExpression: "movieId = :movieId",
+            ExpressionAttributeValues: expressionAttributeValues,
+            FilterExpression: filterExpression.length > 0 ? filterExpression : undefined,
+        };
+
+        if (filterExpression.length > 0) {
+            queryCommandInput.FilterExpression = filterExpression;
+        }
+
+        const commandOutput = await docClient.send(new QueryCommand(queryCommandInput));
 
         if (!commandOutput.Items || commandOutput.Items.length === 0) {
             return {
