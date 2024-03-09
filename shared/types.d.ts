@@ -40,4 +40,3 @@ export type MovieReviews = {
   rating: number;
 }
 
- 
