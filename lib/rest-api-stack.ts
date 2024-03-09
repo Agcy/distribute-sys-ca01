@@ -13,7 +13,7 @@ export class RestAPIStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Tables 
+    // Tables
     const moviesTable = new dynamodb.Table(this, "MoviesTable", {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: { name: "id", type: dynamodb.AttributeType.NUMBER },
@@ -42,8 +42,8 @@ export class RestAPIStack extends cdk.Stack {
       sortKey: { name: "roleName", type: dynamodb.AttributeType.STRING },
     });
 
-    
-    // Functions 
+
+    // Functions
     const getMovieByIdFn = new lambdanode.NodejsFunction(
       this,
       "GetMovieByIdFn",
@@ -62,7 +62,7 @@ export class RestAPIStack extends cdk.Stack {
       );
 
       movieCastsTable.grantReadData(getMovieByIdFn);
-      
+
       const getAllMoviesFn = new lambdanode.NodejsFunction(
         this,
         "GetAllMoviesFn",
@@ -77,7 +77,7 @@ export class RestAPIStack extends cdk.Stack {
             REGION: 'eu-west-1',
           },
         });
-        
+
         new custom.AwsCustomResource(this, "moviesddbInitData", {
           onCreate: {
             service: "DynamoDB",
@@ -94,12 +94,12 @@ export class RestAPIStack extends cdk.Stack {
             resources: [moviesTable.tableArn, movieCastsTable.tableArn],  // Includes movie cast
           }),
         });
-        
-        // Permissions 
+
+        // Permissions
         moviesTable.grantReadData(getMovieByIdFn)
         moviesTable.grantReadData(getAllMoviesFn)
 
-        // REST API 
+        // REST API
         const api = new apig.RestApi(this, "RestAPI", {
           description: "demo api",
           deployOptions: {
@@ -112,13 +112,13 @@ export class RestAPIStack extends cdk.Stack {
             allowOrigins: ["*"],
           },
         });
-    
+
         const moviesEndpoint = api.root.addResource("movies");
         moviesEndpoint.addMethod(
           "GET",
           new apig.LambdaIntegration(getAllMoviesFn, { proxy: true })
         );
-    
+
         const movieEndpoint = moviesEndpoint.addResource("{movieId}");
         movieEndpoint.addMethod(
           "GET",
@@ -188,12 +188,12 @@ export class RestAPIStack extends cdk.Stack {
             "GET",
             new apig.LambdaIntegration(getMovieCastMembersFn, { proxy: true })
         );
-        
+
 
         const getMovieReviewsFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsFn", {
           architecture: lambda.Architecture.ARM_64,
           runtime: lambda.Runtime.NODEJS_14_X, // 确保与你的环境兼容
-          entry: `${__dirname}/../lambdas/getMovieReviews.ts`, // Lambda函数代码的路径
+          entry: `${__dirname}/../lambdas/reviews/getMovieReviews.ts`, // Lambda函数代码的路径
           handler: 'handler', // 你的Lambda函数入口文件中的函数名
           timeout: cdk.Duration.seconds(10),
           memorySize: 128,
@@ -202,7 +202,7 @@ export class RestAPIStack extends cdk.Stack {
             REGION: 'eu-west-1', // 根据需要调整区域
           },
         });
-        
+
         // 授权Lambda函数访问MovieReviews表
         movieReviewsTable.grantReadData(getMovieReviewsFn);
 
@@ -211,4 +211,3 @@ export class RestAPIStack extends cdk.Stack {
 
       }
     }
-    
