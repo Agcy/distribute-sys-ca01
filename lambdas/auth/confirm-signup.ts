@@ -1,18 +1,22 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
-import { SignUpBody } from "../../shared/types";
+
 import {
     CognitoIdentityProviderClient,
-    SignUpCommand,
-    SignUpCommandInput,
-} from "@aws-sdk/client-cognito-identity-provider"; // ES Modules import
+    ConfirmSignUpCommand,
+    ConfirmSignUpCommandInput,
+} from "@aws-sdk/client-cognito-identity-provider";
+import { ConfirmSignUpBody } from "../../shared/types";
+
 import Ajv from "ajv";
 // @ts-ignore
 import schema from "../../shared/types.schema.json";
 
 const ajv = new Ajv();
-const isValidBodyParams = ajv.compile(schema.definitions["SignUpBody"] || {});
+const isValidBodyParams = ajv.compile(
+    schema.definitions["ConfirmSignUpBody"] || {}
+);
 
-const client = new CognitoIdentityProviderClient({ region:  process.env.REGION  });
+const client = new CognitoIdentityProviderClient({ region: process.env.REGION });
 
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     try {
@@ -26,31 +30,30 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
                     "content-type": "application/json",
                 },
                 body: JSON.stringify({
-                    message: `Incorrect type. Must match SignUpBody schema`,
-                    schema: schema.definitions["SignUpBody"],
+                    message: `Incorrect type. Must match ConfirmSignUpBody schema`,
+                    schema: schema.definitions["ConfirmSignUpBody"],
                 }),
             };
         }
+        const confirmSignUpBody = body as ConfirmSignUpBody;
 
-        const signUpBody = body as SignUpBody;
-
-        const params: SignUpCommandInput = {
+        const params: ConfirmSignUpCommandInput = {
             ClientId: process.env.CLIENT_ID!,
-            Username: signUpBody.username,
-            Password: signUpBody.password,
-            UserAttributes: [{ Name: "email", Value: signUpBody.email }],
+            Username: confirmSignUpBody.username,
+            ConfirmationCode: confirmSignUpBody.code,
         };
 
-        const command = new SignUpCommand(params);
-        const res = await client.send(command);
+        const command = new ConfirmSignUpCommand(params);
+        await client.send(command);
+
         return {
             statusCode: 200,
             body: JSON.stringify({
-                message: res,
+                message: `User ${confirmSignUpBody.username} successfully confirmed`,
+                confirmed: true,
             }),
         };
     } catch (err) {
-        console.error(err);
         return {
             statusCode: 500,
             body: JSON.stringify({
