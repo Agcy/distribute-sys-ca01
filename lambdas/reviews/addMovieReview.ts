@@ -2,7 +2,7 @@ import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import Ajv from "ajv";
-import schema from "../shared/type.schema.json"; // 路径根据你的项目结构调整
+import schema from "../../shared/types.schema.json"; // 路径根据你的项目结构调整
 
 const ajv = new Ajv();
 const isValidBodyParams = ajv.compile(schema.definitions["MovieReviews"] || {});

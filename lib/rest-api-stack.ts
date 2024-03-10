@@ -190,27 +190,7 @@ export class RestAPIStack extends cdk.Stack {
         );
 
 
-        const getMovieReviewsFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsFn", {
-            architecture: lambda.Architecture.ARM_64,
-            runtime: lambda.Runtime.NODEJS_14_X, // 确保与你的环境兼容
-            entry: `${__dirname}/../lambdas/reviews/getMovieReviews.ts`, // Lambda函数代码的路径
-            handler: 'handler', // 你的Lambda函数入口文件中的函数名
-            timeout: cdk.Duration.seconds(10),
-            memorySize: 128,
-            environment: {
-                REVIEWS_TABLE_NAME: movieReviewsTable.tableName, // 将表名传递给Lambda函数
-                REGION: 'eu-west-1', // 根据需要调整区域
-            },
-        });
-
-        // 授权Lambda函数访问MovieReviews表
-        movieReviewsTable.grantReadData(getMovieReviewsFn);
-
-        const reviewsEndpoint = movieEndpoint.addResource("reviews");
-        reviewsEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewsFn, {proxy: true}));
-
-
-        // 定义添加电影评论的Lambda函数
+        // POST /movies/reviews - add a movie review.
         const addMovieReviewFn = new lambdanode.NodejsFunction(this, "AddMovieReviewFn", {
             architecture: lambda.Architecture.ARM_64,
             runtime: lambda.Runtime.NODEJS_14_X, // 确保与你的环境兼容
@@ -224,10 +204,34 @@ export class RestAPIStack extends cdk.Stack {
             },
         });
 
+        const reviewsEndpoint = moviesEndpoint.addResource("reviews");
+
         // 授权Lambda函数访问MovieReviews表进行写操作
         movieReviewsTable.grantReadWriteData(addMovieReviewFn);
         reviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(addMovieReviewFn, {proxy: true}));
 
+
+        // GET /movies/{movieId}/reviews - Get all the reviews for the specified movie.
+        const getMovieReviewsFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsFn", {
+            architecture: lambda.Architecture.ARM_64,
+            runtime: lambda.Runtime.NODEJS_14_X, // 确保与你的环境兼容
+            entry: `${__dirname}/../lambdas/reviews/getMovieReviews.ts`, // Lambda函数代码的路径
+            handler: 'handler', // 你的Lambda函数入口文件中的函数名
+            timeout: cdk.Duration.seconds(10),
+            memorySize: 128,
+            environment: {
+                REVIEWS_TABLE_NAME: movieReviewsTable.tableName, // 将表名传递给Lambda函数
+                REGION: 'eu-west-1', // 根据需要调整区域
+            },
+        });
+        // 授权Lambda函数访问MovieReviews表
+        movieReviewsTable.grantReadData(getMovieReviewsFn);
+
+        const moviesReviewsEndpoint = movieEndpoint.addResource("reviews");
+
+        moviesReviewsEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewsFn, {proxy: true}));
+
+        // GET /movies/{movieId}/reviews/{reviewerName} - Get the review written by the named reviewer for the specified movie.
         const getMovieReviewByReviewerFn = new lambdanode.NodejsFunction(this, "GetMovieReviewByReviewerFn", {
             architecture: lambda.Architecture.ARM_64,
             runtime: lambda.Runtime.NODEJS_14_X, // 请确保与你的环境兼容
@@ -244,9 +248,10 @@ export class RestAPIStack extends cdk.Stack {
         // 授权Lambda函数访问MovieReviews表
         movieReviewsTable.grantReadData(getMovieReviewByReviewerFn);
 
-        const movieReviewByIdAndReviewerEndpoint = reviewsEndpoint.addResource("{reviewerName}");
+        const movieReviewByIdAndReviewerEndpoint = moviesReviewsEndpoint.addResource("{reviewerName}");
         movieReviewByIdAndReviewerEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewByReviewerFn, {proxy: true}));
 
+        // PUT /movies/{movieId}/reviews/{reviewerName} - Update the text of a review.
         const updateMovieReviewFn = new lambdanode.NodejsFunction(this, "UpdateMovieReviewFn", {
             architecture: lambda.Architecture.ARM_64,
             runtime: lambda.Runtime.NODEJS_14_X,
@@ -267,6 +272,7 @@ export class RestAPIStack extends cdk.Stack {
         movieReviewByIdAndReviewerEndpoint.addMethod("PUT", new apig.LambdaIntegration(updateMovieReviewFn, {proxy: true}));
 
 
+        // GET /movies/{movieId}/reviews/{year} - Get the reviews written in a specific year for a specific movie.
         const getMovieReviewsByYearFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsByYearFn", {
             architecture: lambda.Architecture.ARM_64,
             runtime: lambda.Runtime.NODEJS_14_X,
@@ -284,7 +290,7 @@ export class RestAPIStack extends cdk.Stack {
         movieReviewsTable.grantReadData(getMovieReviewsByYearFn);
 
         // 在API网关中添加一个新的资源和方法以支持GET请求
-        const reviewsByYearEndpoint = reviewsEndpoint.addResource("{year}");
+        const reviewsByYearEndpoint = moviesReviewsEndpoint.addResource("{year}");
         reviewsByYearEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewsByYearFn, { proxy: true }));
 
 
