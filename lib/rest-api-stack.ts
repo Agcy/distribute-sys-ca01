@@ -29,24 +29,24 @@ export class RestAPIStack extends cdk.Stack {
             tableName: "MovieCast",
         });
 
-        const movieReviewsTable = new dynamodb.Table(this, "MovieReviewsTable", {
-            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            partitionKey: {name: "movieId", type: dynamodb.AttributeType.NUMBER},
-            sortKey: {name: "reviewDate", type: dynamodb.AttributeType.STRING},
-            removalPolicy: cdk.RemovalPolicy.DESTROY, // 注意：实际部署时可能需要更保守的策略
-            tableName: "MovieReviews",
-        });
-
         movieCastsTable.addLocalSecondaryIndex({
             indexName: "roleIx",
             sortKey: {name: "roleName", type: dynamodb.AttributeType.STRING},
         });
 
+        const movieReviewsTable = new dynamodb.Table(this, "MovieReviewsTable", {
+            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+            partitionKey: {name: "movieId", type: dynamodb.AttributeType.NUMBER},
+            sortKey: {name: "reviewerName", type: dynamodb.AttributeType.STRING},
+            removalPolicy: cdk.RemovalPolicy.DESTROY, // 注意：实际部署时可能需要更保守的策略
+            tableName: "MovieReviews",
+        });
+
         movieReviewsTable.addLocalSecondaryIndex({
             indexName: "reviewIx",
-            sortKey: {name: "reviewDate", type: dynamodb.AttributeType.STRING}
+            sortKey: {name: "reviewerName", type: dynamodb.AttributeType.STRING},
+            projectionType: dynamodb.ProjectionType.ALL,
         })
-
 
         // Functions
         const getMovieByIdFn = new lambdanode.NodejsFunction(
@@ -271,26 +271,6 @@ export class RestAPIStack extends cdk.Stack {
 
         moviesReviewsEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewsFn, {proxy: true}));
 
-        // // GET /movies/{movieId}/reviews/{reviewerName} - Get the review written by the named reviewer for the specified movie.
-        // const getMovieReviewByReviewerFn = new lambdanode.NodejsFunction(this, "GetMovieReviewByReviewerFn", {
-        //     architecture: lambda.Architecture.ARM_64,
-        //     runtime: lambda.Runtime.NODEJS_14_X, // 请确保与你的环境兼容
-        //     entry: `${__dirname}/../lambdas/reviews/getMovieReviewByReviewer.ts`, // Lambda函数代码的路径
-        //     handler: 'handler',
-        //     timeout: cdk.Duration.seconds(10),
-        //     memorySize: 128,
-        //     environment: {
-        //         TABLE_NAME: movieReviewsTable.tableName, // 确保使用正确的环境变量
-        //         REGION: 'eu-west-1', // 根据需要调整区域
-        //     },
-        // });
-        //
-        // // 授权Lambda函数访问MovieReviews表
-        // movieReviewsTable.grantReadData(getMovieReviewByReviewerFn);
-        //
-        // const movieReviewByIdAndReviewerEndpoint = moviesReviewsEndpoint.addResource("{reviewerName}");
-        // movieReviewByIdAndReviewerEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewByReviewerFn, {proxy: true}));
-
         //
         const handleMovieReviewsQueryFn = new lambdanode.NodejsFunction(this, "HandleMovieReviewsQueryFn", {
             architecture: lambda.Architecture.ARM_64,
@@ -324,7 +304,7 @@ export class RestAPIStack extends cdk.Stack {
             timeout: cdk.Duration.seconds(10),
             memorySize: 128,
             environment: {
-                TABLE_NAME: movieReviewsTable.tableName,
+                REVIEWS_TABLE_NAME: movieReviewsTable.tableName,
                 REGION: 'eu-west-1',
             },
         });
@@ -334,29 +314,6 @@ export class RestAPIStack extends cdk.Stack {
 
         // 在API网关中添加路由以支持PUT请求
         reviewsQueryEndpoint.addMethod("PUT", new apig.LambdaIntegration(updateMovieReviewFn, {proxy: true}));
-
-
-        // // GET /movies/{movieId}/reviews/{year} - Get the reviews written in a specific year for a specific movie.
-        // const getMovieReviewsByYearFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsByYearFn", {
-        //     architecture: lambda.Architecture.ARM_64,
-        //     runtime: lambda.Runtime.NODEJS_14_X,
-        //     entry: `${__dirname}/../lambdas/reviews/getMovieReviewsByYear.ts`,
-        //     handler: 'handler',
-        //     timeout: cdk.Duration.seconds(10),
-        //     memorySize: 128,
-        //     environment: {
-        //         REVIEWS_TABLE_NAME: movieReviewsTable.tableName, // 确保使用正确的环境变量
-        //         REGION: 'eu-west-1',
-        //     },
-        // });
-        //
-        // // 授权Lambda函数访问MovieReviews表
-        // movieReviewsTable.grantReadData(getMovieReviewsByYearFn);
-        //
-        // // 在API网关中添加一个新的资源和方法以支持GET请求
-        // const reviewsByYearEndpoint = moviesReviewsEndpoint.addResource("{year}");
-        // reviewsByYearEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewsByYearFn, { proxy: true }));
-
 
         const getReviewsByReviewerFn = new lambdanode.NodejsFunction(this, "GetReviewsByReviewerFn", {
             architecture: lambda.Architecture.ARM_64,

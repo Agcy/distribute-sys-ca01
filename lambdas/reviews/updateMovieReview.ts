@@ -1,56 +1,48 @@
-import { APIGatewayProxyHandlerV2 } from "aws-lambda";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import {APIGatewayProxyHandlerV2} from "aws-lambda";
+import {DynamoDBDocumentClient, GetCommand, PutCommand} from "@aws-sdk/lib-dynamodb";
+import {DynamoDBClient} from "@aws-sdk/client-dynamodb";
 
-const ddbClient = new DynamoDBClient({ region: process.env.REGION });
+const ddbClient = new DynamoDBClient({region: process.env.REGION});
 const docClient = DynamoDBDocumentClient.from(ddbClient);
 
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     try {
         console.log("Event: ", event);
-        const movieId = event.pathParameters?.movieId;
-        const reviewerName = event.pathParameters?.reviewerName;
-        const body = event.body ? JSON.parse(event.body) : {};
+        const parameters = event?.pathParameters;
+        const movieId = parameters?.movieId ? parseInt(parameters.movieId) : undefined;
+        const reviewerName = event.pathParameters?.queryParam;
+        const body = event.body ? JSON.parse(event.body) : undefined;
 
-        if (!movieId || !reviewerName || !body.content) {
+        if (!movieId || !reviewerName || !body) {
             return {
                 statusCode: 400,
-                headers: {
-                    "content-type": "application/json",
-                },
-                body: JSON.stringify({ message: "Missing or invalid parameters" }),
+                body: JSON.stringify({message: "Missing or invalid parameters"}),
             };
         }
 
-        await docClient.send(
-            new UpdateCommand({
-                TableName: process.env.TABLE_NAME,
-                Key: {
-                    movieId: movieId,
-                    reviewerName: reviewerName,
-                },
-                UpdateExpression: "set content = :content",
-                ExpressionAttributeValues: {
-                    ":content": body.content,
-                },
-            })
-        );
+        const params: any = {
+            TableName: process.env.TABLE_NAME,
+            Key: {
+                movieId: movieId,
+                reviewerName: reviewerName,
+            },
+            UpdateExpression: 'SET content = :content, rating = :rating ',
+            ExpressionAttributeValues: {
+                ':content': body.content,
+                ':rating': body.rating
+            },
+            ReturnValues: 'UPDATED_NEW',
+        };
 
         return {
             statusCode: 200,
-            headers: {
-                "content-type": "application/json",
-            },
-            body: JSON.stringify({ message: "Review updated successfully" }),
+            body: JSON.stringify({message: "Review updated successfully"}),
         };
-    } catch (error: any) {
-        console.error(JSON.stringify(error));
+    } catch (error) {
+        console.error(error);
         return {
             statusCode: 500,
-            headers: {
-                "content-type": "application/json",
-            },
-            body: JSON.stringify({ error }),
+            body: JSON.stringify({error}),
         };
     }
 };

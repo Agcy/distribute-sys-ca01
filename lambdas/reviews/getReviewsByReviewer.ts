@@ -25,7 +25,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
                 TableName: process.env.REVIEWS_TABLE_NAME, // Make sure this matches your table name
                 FilterExpression: "reviewerName = :reviewerName",
                 ExpressionAttributeValues: {
-                    ":reviewerName": { N:reviewerName },
+                    ":reviewerName": { S: reviewerName },
                 },
             })
         );

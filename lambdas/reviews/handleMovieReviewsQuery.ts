@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
-import { DynamoDBClient, QueryCommand, QueryCommandOutput } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, QueryCommand, QueryCommandOutput, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 const ddbClient = new DynamoDBClient({ region: process.env.REGION });
@@ -9,9 +9,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     try {
         console.log("Event: ", event);
         const movieId = event.pathParameters?.movieId;
-        const thirdParam = event.pathParameters?.thirdParam; // 可能是year或reviewerName
+        const queryParam = event.pathParameters?.queryParam; // 可能是year或reviewerName
 
-        if (!movieId || !thirdParam) {
+        if (!movieId || !queryParam) {
             return {
                 statusCode: 400,
                 headers: {
@@ -22,10 +22,10 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         }
 
         // 检查thirdParam是年份还是名称
-        if (/^\d{4}$/.test(thirdParam)) {
+        if (/^\d{4}$/.test(queryParam)) {
             // 如果thirdParam是年份
-            const startOfYear = `${thirdParam}-01-01`;
-            const endOfYear = `${thirdParam}-12-31`;
+            const startOfYear = `${queryParam}-01-01`;
+            const endOfYear = `${queryParam}-12-31`;
 
             const commandOutput = await docClient.send(
                 new QueryCommand({
@@ -33,8 +33,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
                     KeyConditionExpression: "movieId = :movieId and reviewDate BETWEEN :startOfYear AND :endOfYear",
                     ExpressionAttributeValues: {
                         ":movieId": { N: movieId },
-                        ":startOfYear": { N: startOfYear },
-                        ":endOfYear": { N: endOfYear },
+                        ":startOfYear": { S: startOfYear },
+                        ":endOfYear": { S: endOfYear },
                     },
                 })
             );
@@ -44,13 +44,12 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         } else {
             // 如果thirdParam是评论者名称
             const commandOutput = await docClient.send(
-                new QueryCommand({
+                new ScanCommand({
                     TableName: process.env.REVIEWS_TABLE_NAME,
-                    IndexName: 'ReviewerIndex',
-                    KeyConditionExpression: "movieId = :movieId AND reviewerName = :reviewerName",
+                    FilterExpression: "movieId = :movieId AND reviewerName = :reviewerName",
                     ExpressionAttributeValues: {
                         ":movieId": { N: movieId },
-                        ":reviewerName": { N: thirdParam },
+                        ":reviewerName": { S: queryParam },
                     },
                 })
             );

@@ -24,7 +24,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         const commandOutput = await docClient.send(
             new QueryCommand({
                 TableName: process.env.REVIEWS_TABLE_NAME,
-                IndexName: 'ReviewerIndex', // 假设你有一个基于reviewerName的全局二级索引
+                IndexName: 'reviewIx', // 假设你有一个基于reviewerName的全局二级索引
                 KeyConditionExpression: "movieId = :movieId AND reviewerName = :reviewerName",
                 ExpressionAttributeValues: {
                     ":movieId": { N: movieId },
