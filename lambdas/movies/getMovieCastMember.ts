@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
-import { MovieCastMemberQueryParams } from "../shared/types";
+import { MovieCastMemberQueryParams } from "../../shared/types";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DynamoDBDocumentClient,
@@ -7,13 +7,13 @@ import {
   QueryCommandInput,
 } from "@aws-sdk/lib-dynamodb";
 import Ajv from "ajv";
-import schema from "../shared/types.schema.json";
+import schema from "../../shared/types.schema.json";
 
 const ajv = new Ajv();
 const isValidQueryParams = ajv.compile(
   schema.definitions["MovieCastMemberQueryParams"] || {}
 );
- 
+
 const ddbDocClient = createDocumentClient();
 
 export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
@@ -41,7 +41,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
         }),
       };
     }
-    
+
     const movieId = parseInt(queryParams.movieId);
     let commandInput: QueryCommandInput = {
       TableName: process.env.TABLE_NAME,
@@ -74,11 +74,11 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
         },
       };
     }
-    
+
     const commandOutput = await ddbDocClient.send(
       new QueryCommand(commandInput)
       );
-      
+
       return {
         statusCode: 200,
         headers: {
@@ -99,7 +99,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       };
     }
   };
-  
+
   function createDocumentClient() {
     const ddbClient = new DynamoDBClient({ region: process.env.REGION });
     const marshallOptions = {

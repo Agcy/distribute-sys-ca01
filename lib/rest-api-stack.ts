@@ -55,7 +55,7 @@ export class RestAPIStack extends cdk.Stack {
             {
                 architecture: lambda.Architecture.ARM_64,
                 runtime: lambda.Runtime.NODEJS_18_X,
-                entry: `${__dirname}/../lambdas/getMovieById.ts`,
+                entry: `${__dirname}/../lambdas/movies/getMovieById.ts`,
                 timeout: cdk.Duration.seconds(10),
                 memorySize: 128,
                 environment: {
@@ -74,7 +74,7 @@ export class RestAPIStack extends cdk.Stack {
             {
                 architecture: lambda.Architecture.ARM_64,
                 runtime: lambda.Runtime.NODEJS_18_X,
-                entry: `${__dirname}/../lambdas/getAllMovies.ts`,
+                entry: `${__dirname}/../lambdas/movies/getAllMovies.ts`,
                 timeout: cdk.Duration.seconds(10),
                 memorySize: 128,
                 environment: {
@@ -168,7 +168,7 @@ export class RestAPIStack extends cdk.Stack {
         const newMovieFn = new lambdanode.NodejsFunction(this, "AddMovieFn", {
             architecture: lambda.Architecture.ARM_64,
             runtime: lambda.Runtime.NODEJS_16_X,
-            entry: `${__dirname}/../lambdas/addMovie.ts`,
+            entry: `${__dirname}/../lambdas/movies/addMovie.ts`,
             timeout: cdk.Duration.seconds(10),
             memorySize: 128,
             environment: {
@@ -188,7 +188,7 @@ export class RestAPIStack extends cdk.Stack {
         const deleteMovieFn = new lambdanode.NodejsFunction(this, "DeleteMovieFn", {
             architecture: lambda.Architecture.ARM_64,
             runtime: lambda.Runtime.NODEJS_18_X, // Ensure runtime compatibility
-            entry: `${__dirname}/../lambdas/deleteMovie.ts`, // Adjust the path as needed
+            entry: `${__dirname}/../lambdas/movies/deleteMovie.ts`, // Adjust the path as needed
             timeout: cdk.Duration.seconds(10),
             memorySize: 128,
             environment: {
@@ -211,7 +211,7 @@ export class RestAPIStack extends cdk.Stack {
             {
                 architecture: lambda.Architecture.ARM_64,
                 runtime: lambda.Runtime.NODEJS_16_X,
-                entry: `${__dirname}/../lambdas/getMovieCastMember.ts`,
+                entry: `${__dirname}/../lambdas/movies/getMovieCastMember.ts`,
                 timeout: cdk.Duration.seconds(10),
                 memorySize: 128,
                 environment: {
