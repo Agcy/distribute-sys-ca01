@@ -11,6 +11,7 @@
     "schema": "typescript-json-schema --noExtraProps --required --refs false -o ./shared/types.schema.json  \"./shared/types.d.ts\" \"*\""
   },
   "devDependencies": {
+    "@aws-sdk/client-translate": "^3.525.0",
     "@types/aws-lambda": "^8.10.93",
     "@types/node": "20.4.2",
     "aws-cdk": "2.88.0",
@@ -25,9 +26,10 @@
     "@aws-sdk/client-sqs": "^3.360.0",
     "@aws-sdk/lib-dynamodb": "^3.79.0",
     "@aws-sdk/util-dynamodb": "^3.303.0",
-    "axios": "^1.1.2",
     "ajv": "^8.12.0",
     "aws-cdk-lib": "2.88.0",
+    "aws-sdk": "^2.1576.0",
+    "axios": "^1.1.2",
     "constructs": "^10.0.0",
     "jsonwebtoken": "^8.5.1",
     "jwk-to-pem": "^2.0.5",

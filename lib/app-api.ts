@@ -124,6 +124,7 @@ export class AppApi extends Construct {
             CLIENT_ID: props.userPoolClientId,
             REGION: cdk.Aws.REGION,
         });
+        const getTranslatedReviewsFn = lambdas.createTranslatedReviewsFn(this, movieReviewsTable.tableName)
 
 
         // authentic cookie
@@ -150,6 +151,7 @@ export class AppApi extends Construct {
         movieReviewsTable.grantReadData(getReviewsByReviewerFn);
         movieReviewsTable.grantReadWriteData(addMovieReviewFn);
         movieReviewsTable.grantReadWriteData(updateMovieReviewFn);
+        movieReviewsTable.grantReadData(getTranslatedReviewsFn);
 
 
         // route
@@ -161,6 +163,9 @@ export class AppApi extends Construct {
         const moviesReviewsEndpoint = movieEndpoint.addResource("reviews");
         const queryReviewsKeyEndpoint = moviesReviewsEndpoint.addResource("{queryParam}")
         const reviewerReviewsEndpoint = appApi.root.addResource("reviews");
+        const reviewerEndpoint = reviewerReviewsEndpoint.addResource("{reviewerName}");
+        const singleReviewEndpoint = reviewerEndpoint.addResource("{movieId}")
+        const translationEndpoint = singleReviewEndpoint.addResource("translation")
 
 
         // methods
@@ -208,7 +213,10 @@ export class AppApi extends Construct {
         // PUT /movies/{movieId}/reviews/{reviewerName} - Update the text of a review.
         // reviewers
         // GET /reviews/{reviewerName} - Get all the reviews written by a specific reviewer.
-        reviewerReviewsEndpoint.addResource("{reviewerName}").addMethod("GET", new apig.LambdaIntegration(getReviewsByReviewerFn, {proxy: true}));
+        reviewerEndpoint
+            .addMethod("GET", new apig.LambdaIntegration(getReviewsByReviewerFn, {proxy: true}));
         // GET /reviews/{reviewerName}/{movieId}/translation?language=code - Get a translated version of a movie review using the movie ID and reviewer name as the identifier.
+        translationEndpoint
+            .addMethod("GET", new apig.LambdaIntegration(getTranslatedReviewsFn, {proxy : true}))
     }
 }

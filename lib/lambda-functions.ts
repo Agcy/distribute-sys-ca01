@@ -163,3 +163,19 @@ export const createAppCommonFnProps = (scope: Construct, id: string, entryPath: 
         environment,
     });
 };
+
+
+export const createTranslatedReviewsFn = (scope: Construct, reviewsTableName: string) : lambdanode.NodejsFunction => {
+    return new lambdanode.NodejsFunction(scope, "GetTranslatedReviewsFn", {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambdas/reviews/getTranslatedReviews.ts`,
+        handler: 'handler',
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+            REVIEWS_TABLE_NAME: reviewsTableName,
+            REGION: 'eu-west-1',
+        },
+    });
+}
