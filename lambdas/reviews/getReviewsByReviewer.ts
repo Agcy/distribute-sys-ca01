@@ -2,8 +2,7 @@ import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
-const ddbClient = new DynamoDBClient({ region: process.env.REGION });
-const docClient = DynamoDBDocumentClient.from(ddbClient);
+const ddbDocClient = createDDbDocClient();
 
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     try {
@@ -20,7 +19,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
             };
         }
 
-        const commandOutput = await docClient.send(
+        const commandOutput = await ddbDocClient.send(
             new ScanCommand({
                 TableName: process.env.REVIEWS_TABLE_NAME, // Make sure this matches your table name
                 FilterExpression: "reviewerName = :reviewerName",
@@ -62,3 +61,18 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         };
     }
 };
+
+
+function createDDbDocClient() {
+    const ddbClient = new DynamoDBClient({region: process.env.REGION});
+    const marshallOptions = {
+        convertEmptyValues: true,
+        removeUndefinedValues: true,
+        convertClassInstanceToMap: true,
+    };
+    const unmarshallOptions = {
+        wrapNumbers: false,
+    };
+    const translateConfig = {marshallOptions, unmarshallOptions};
+    return DynamoDBDocumentClient.from(ddbClient, translateConfig);
+}

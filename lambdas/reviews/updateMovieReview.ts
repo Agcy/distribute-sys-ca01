@@ -1,6 +1,7 @@
 import {APIGatewayProxyHandlerV2} from "aws-lambda";
 import {DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand} from "@aws-sdk/lib-dynamodb";
-import {DynamoDBClient} from "@aws-sdk/client-dynamodb";
+import {DynamoDBClient, DynamoDBServiceException} from "@aws-sdk/client-dynamodb";
+import {errorResponse} from '../utils'
 
 const ddbDocClient = createDDbDocClient();
 
@@ -45,13 +46,22 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
             body: JSON.stringify({message: "Review updated successfully"}),
         };
     } catch (error) {
-        console.error(error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({error}),
-        };
+        console.error(JSON.stringify(error));
+        if (error instanceof DynamoDBServiceException) {
+            if (error.name === 'ConditionalCheckFailedException') {
+                return errorResponse(400, 'Conditional check failed');
+            } else if (error.name === 'ProvisionedThroughputExceededException') {
+                return errorResponse(429, 'Provisioned throughput exceeded');
+            } else if (error.name === 'ResourceNotFoundException') {
+                return errorResponse(404, 'Resource not found');
+            }
+        }
+        // unknown errors
+        return errorResponse(500, 'An unexpected error occurred');
     }
 };
+
+
 
 function createDDbDocClient() {
     const ddbClient = new DynamoDBClient({region: process.env.REGION});

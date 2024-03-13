@@ -1,7 +1,8 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBClient, DynamoDBServiceException } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, PutCommandInput } from "@aws-sdk/lib-dynamodb";
 import Ajv from "ajv";
+import {errorResponse} from '../utils'
 // @ts-ignore
 import schema from "../../shared/types.schema.json"; // 路径根据你的项目结构调整
 
@@ -25,29 +26,32 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
             };
         }
 
-        await ddbDocClient.send(
-            new PutCommand({
-                TableName: process.env.REVIEWS_TABLE_NAME,
-                Item: body,
-            })
-        );
+        const putCommandInput: PutCommandInput = {
+            TableName: process.env.REVIEWS_TABLE_NAME,
+            Item: body,
+        };
+        await ddbDocClient.send(new PutCommand(putCommandInput));
 
         return {
             statusCode: 201,
             headers: {
                 "content-type": "application/json",
             },
-            body: JSON.stringify({ message: "Review added" }),
+            body: JSON.stringify({ message: "Review added successfully" }),
         };
-    } catch (error: any) {
+    } catch (error) {
         console.error(JSON.stringify(error));
-        return {
-            statusCode: 500,
-            headers: {
-                "content-type": "application/json",
-            },
-            body: JSON.stringify({ error: error.message }),
-        };
+        if (error instanceof DynamoDBServiceException) {
+            if (error.name === 'ConditionalCheckFailedException') {
+                return errorResponse(400, 'Conditional check failed');
+            } else if (error.name === 'ProvisionedThroughputExceededException') {
+                return errorResponse(429, 'Provisioned throughput exceeded');
+            } else if (error.name === 'ResourceNotFoundException') {
+                return errorResponse(404, 'Resource not found');
+            }
+        }
+        // unknown errors
+        return errorResponse(500, 'An unexpected error occurred');
     }
 };
 

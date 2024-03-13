@@ -2,8 +2,7 @@ import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient, QueryCommand, QueryCommandOutput, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
-const ddbClient = new DynamoDBClient({ region: process.env.REGION });
-const docClient = DynamoDBDocumentClient.from(ddbClient);
+const ddbDocClient = createDDbDocClient();
 
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     try {
@@ -27,7 +26,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
             const startOfYear = `${queryParam}-01-01`;
             const endOfYear = `${queryParam}-12-31`;
 
-            const commandOutput = await docClient.send(
+            const commandOutput = await ddbDocClient.send(
                 new QueryCommand({
                     TableName: process.env.REVIEWS_TABLE_NAME,
                     KeyConditionExpression: "movieId = :movieId",
@@ -44,7 +43,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
             return handleQueryResponse(commandOutput);
         } else {
             // 如果thirdParam是评论者名称
-            const commandOutput = await docClient.send(
+            const commandOutput = await ddbDocClient.send(
                 new ScanCommand({
                     TableName: process.env.REVIEWS_TABLE_NAME,
                     FilterExpression: "movieId = :movieId AND reviewerName = :reviewerName",
@@ -92,4 +91,18 @@ function handleQueryResponse(commandOutput : QueryCommandOutput) {
         },
         body: JSON.stringify(body),
     };
+}
+
+function createDDbDocClient() {
+    const ddbClient = new DynamoDBClient({region: process.env.REGION});
+    const marshallOptions = {
+        convertEmptyValues: true,
+        removeUndefinedValues: true,
+        convertClassInstanceToMap: true,
+    };
+    const unmarshallOptions = {
+        wrapNumbers: false,
+    };
+    const translateConfig = {marshallOptions, unmarshallOptions};
+    return DynamoDBDocumentClient.from(ddbClient, translateConfig);
 }

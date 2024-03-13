@@ -51,10 +51,10 @@ export const verifyToken = async (
 ): Promise<JwtToken> => {
     try {
         const url = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}/.well-known/jwks.json`;
-        const { data }: { data: Jwk } = await axios.get(url);
+        const {data}: { data: Jwk } = await axios.get(url);
         const pem = jwkToPem(data.keys[0]);
 
-        return jwt.verify(token, pem, { algorithms: ["RS256"] });
+        return jwt.verify(token, pem, {algorithms: ["RS256"]});
     } catch (err) {
         console.log(err);
         return null;
@@ -76,3 +76,12 @@ export const createPolicy = (
         ],
     };
 };
+
+
+export const errorResponse = (statusCode: number, message: string) => ({
+    statusCode: statusCode,
+    headers: {
+        "content-type": "application/json",
+    },
+    body: JSON.stringify({error: message}),
+})

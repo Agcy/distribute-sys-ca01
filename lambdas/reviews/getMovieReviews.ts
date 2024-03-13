@@ -2,8 +2,7 @@ import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
-const ddbClient = new DynamoDBClient({ region: process.env.REGION });
-const docClient = DynamoDBDocumentClient.from(ddbClient);
+const ddbDocClient = createDDbDocClient();
 
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     try {
@@ -56,7 +55,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
             queryCommandInput.FilterExpression = filterExpression;
         }
 
-        const commandOutput = await docClient.send(new QueryCommand(queryCommandInput));
+        const commandOutput = await ddbDocClient.send(new QueryCommand(queryCommandInput));
 
         if (!commandOutput.Items || commandOutput.Items.length === 0) {
             return {
@@ -90,3 +89,18 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         };
     }
 };
+
+
+function createDDbDocClient() {
+    const ddbClient = new DynamoDBClient({region: process.env.REGION});
+    const marshallOptions = {
+        convertEmptyValues: true,
+        removeUndefinedValues: true,
+        convertClassInstanceToMap: true,
+    };
+    const unmarshallOptions = {
+        wrapNumbers: false,
+    };
+    const translateConfig = {marshallOptions, unmarshallOptions};
+    return DynamoDBDocumentClient.from(ddbClient, translateConfig);
+}
