@@ -1,6 +1,6 @@
-import { Aws } from "aws-cdk-lib";
+import {Aws} from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib";
-import { Construct } from "constructs";
+import {Construct} from "constructs";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as node from "aws-cdk-lib/aws-lambda-nodejs";
@@ -92,10 +92,22 @@ export class AppApi extends Construct {
         const newMovieFn = lambdas.createNewMovieFn(this, moviesTable.tableName)
         const deleteMovieFn = lambdas.createDeleteMovieFn(this, moviesTable.tableName)
         const getMovieCastMembersFn = lambdas.createGetMovieCastMembersFn(this, movieCastsTable.tableName)
-        const addMovieReviewFn = lambdas.createAddMovieReviewFn(this, movieReviewsTable.tableName)
+        const addMovieReviewFn = lambdas.createAddMovieReviewFn(this, {
+            USER_POOL_ID: props.userPoolId,
+            CLIENT_ID: props.userPoolClientId,
+            REVIEWS_TABLE_NAME: movieReviewsTable.tableName, // 将表名传递给Lambda函数
+            REGION: 'eu-west-1', // 根据需要调整区域
+        },)
+        console.log("addMovieReviewFn deploy success")
         const getMovieReviewsFn = lambdas.createGetMovieReviewsFn(this, movieReviewsTable.tableName)
         const handleMovieReviewsQueryFn = lambdas.createHandleMovieReviewsQueryFn(this, movieReviewsTable.tableName)
-        const updateMovieReviewFn = lambdas.createUpdateMovieReviewFn(this, movieReviewsTable.tableName)
+        const updateMovieReviewFn = lambdas.createUpdateMovieReviewFn(this, {
+            USER_POOL_ID: props.userPoolId,
+            CLIENT_ID: props.userPoolClientId,
+            REVIEWS_TABLE_NAME: movieReviewsTable.tableName,
+            REGION: 'eu-west-1',
+        })
+        console.log("updateMovieReviewFn deploy success")
         const getReviewsByReviewerFn = lambdas.createGetReviewsByReviewerFn(this, movieReviewsTable.tableName)
         const protectedFn = lambdas.createAppCommonFnProps(this, "ProtectedFn", `${__dirname}/../lambdas/protected.ts`, {
             USER_POOL_ID: props.userPoolId,
@@ -145,6 +157,7 @@ export class AppApi extends Construct {
         const publicRes = appApi.root.addResource("public");
         const moviesEndpoint = appApi.root.addResource("movies");
         const movieEndpoint = moviesEndpoint.addResource("{movieId}");
+        const moviesCastEndpoint = moviesEndpoint.addResource("cast")
         const moviesReviewsEndpoint = movieEndpoint.addResource("reviews");
         const queryReviewsKeyEndpoint = moviesReviewsEndpoint.addResource("{queryParam}")
         const reviewerReviewsEndpoint = appApi.root.addResource("reviews");
@@ -152,16 +165,25 @@ export class AppApi extends Construct {
 
         // methods
         // protected
-        protectedRes.addMethod("GET", new apig.LambdaIntegration(protectedFn), {authorizer: requestAuthorizer, authorizationType: apig.AuthorizationType.CUSTOM,});
+        protectedRes.addMethod("GET", new apig.LambdaIntegration(protectedFn), {
+            authorizer: requestAuthorizer,
+            authorizationType: apig.AuthorizationType.CUSTOM,
+        });
         // public
         publicRes.addMethod("GET", new apig.LambdaIntegration(publicFn));
         // movies
         moviesEndpoint.addMethod("GET", new apig.LambdaIntegration(getAllMoviesFn, {proxy: true}));
-        moviesEndpoint.addMethod("POST", new apig.LambdaIntegration(newMovieFn), {authorizer: requestAuthorizer, authorizationType: apig.AuthorizationType.CUSTOM,});
-        moviesEndpoint.addResource("cast").addMethod("GET", new apig.LambdaIntegration(getMovieCastMembersFn, {proxy: true}));
+        moviesEndpoint.addMethod("POST", new apig.LambdaIntegration(newMovieFn), {
+            authorizer: requestAuthorizer,
+            authorizationType: apig.AuthorizationType.CUSTOM,
+        });
+        moviesCastEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieCastMembersFn, {proxy: true}));
         // movie
         movieEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieByIdFn, {proxy: true}));
-        movieEndpoint.addMethod("DELETE", new apig.LambdaIntegration(deleteMovieFn), {authorizer: requestAuthorizer, authorizationType: apig.AuthorizationType.CUSTOM,});
+        movieEndpoint.addMethod("DELETE", new apig.LambdaIntegration(deleteMovieFn), {
+            authorizer: requestAuthorizer,
+            authorizationType: apig.AuthorizationType.CUSTOM,
+        });
         //reviews
         // POST /movies/reviews - add a movie review.
         moviesEndpoint.addResource("reviews").addMethod(
@@ -177,7 +199,7 @@ export class AppApi extends Construct {
 
         queryReviewsKeyEndpoint.addMethod(
             "GET",
-            new apig.LambdaIntegration(handleMovieReviewsQueryFn, { proxy: true }));
+            new apig.LambdaIntegration(handleMovieReviewsQueryFn, {proxy: true}));
         queryReviewsKeyEndpoint.addMethod(
             "PUT",
             new apig.LambdaIntegration(updateMovieReviewFn),
@@ -186,7 +208,7 @@ export class AppApi extends Construct {
         // PUT /movies/{movieId}/reviews/{reviewerName} - Update the text of a review.
         // reviewers
         // GET /reviews/{reviewerName} - Get all the reviews written by a specific reviewer.
-        reviewerReviewsEndpoint.addResource("{reviewerName}").addMethod("GET", new apig.LambdaIntegration(getReviewsByReviewerFn, { proxy: true }));
+        reviewerReviewsEndpoint.addResource("{reviewerName}").addMethod("GET", new apig.LambdaIntegration(getReviewsByReviewerFn, {proxy: true}));
         // GET /reviews/{reviewerName}/{movieId}/translation?language=code - Get a translated version of a movie review using the movie ID and reviewer name as the identifier.
     }
 }

@@ -30,7 +30,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
             const commandOutput = await docClient.send(
                 new QueryCommand({
                     TableName: process.env.REVIEWS_TABLE_NAME,
-                    KeyConditionExpression: "movieId = :movieId and reviewDate BETWEEN :startOfYear AND :endOfYear",
+                    KeyConditionExpression: "movieId = :movieId",
+                    FilterExpression: "reviewDate BETWEEN :startOfYear AND :endOfYear",
                     ExpressionAttributeValues: {
                         ":movieId": { N: movieId },
                         ":startOfYear": { S: startOfYear },

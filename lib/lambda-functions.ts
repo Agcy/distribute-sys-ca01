@@ -83,7 +83,7 @@ export const createGetMovieCastMembersFn = (scope: Construct, moviesTableName: s
     );
 }
 
-export const createAddMovieReviewFn = (scope: Construct, reviewsTableName: string): lambdanode.NodejsFunction => {
+export const createAddMovieReviewFn = (scope: Construct, environment: { [key: string]: string }): lambdanode.NodejsFunction => {
     return new lambdanode.NodejsFunction(scope, "AddMovieReviewFn", {
         architecture: lambda.Architecture.ARM_64,
         runtime: lambda.Runtime.NODEJS_16_X, // 确保与你的环境兼容
@@ -91,10 +91,7 @@ export const createAddMovieReviewFn = (scope: Construct, reviewsTableName: strin
         handler: 'handler',
         timeout: cdk.Duration.seconds(10),
         memorySize: 128,
-        environment: {
-            REVIEWS_TABLE_NAME: reviewsTableName, // 将表名传递给Lambda函数
-            REGION: 'eu-west-1', // 根据需要调整区域
-        },
+        environment
     });
 }
 
@@ -128,7 +125,7 @@ export const createHandleMovieReviewsQueryFn = (scope: Construct, reviewsTableNa
     });
 }
 
-export const createUpdateMovieReviewFn = (scope: Construct, reviewsTableName: string): lambdanode.NodejsFunction => {
+export const createUpdateMovieReviewFn = (scope: Construct, environment: { [key: string]: string }): lambdanode.NodejsFunction => {
     return new lambdanode.NodejsFunction(scope, "UpdateMovieReviewFn", {
         architecture: lambda.Architecture.ARM_64,
         runtime: lambda.Runtime.NODEJS_16_X,
@@ -136,10 +133,7 @@ export const createUpdateMovieReviewFn = (scope: Construct, reviewsTableName: st
         handler: 'handler',
         timeout: cdk.Duration.seconds(10),
         memorySize: 128,
-        environment: {
-            REVIEWS_TABLE_NAME: reviewsTableName,
-            REGION: 'eu-west-1',
-        },
+        environment
     });
 }
 
